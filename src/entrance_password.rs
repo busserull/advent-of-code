@@ -1,6 +1,7 @@
 use std::fs;
 use std::path::Path;
 
+#[derive(Clone, Copy)]
 enum Direction {
     Left,
     Right,
@@ -13,10 +14,10 @@ impl SafeDial {
         Self(50)
     }
 
-    fn rotate(&mut self, direction: Direction, clicks: i32) {
+    fn rotate(&mut self, direction: Direction) {
         let change = match direction {
-            Direction::Left => -clicks,
-            Direction::Right => clicks,
+            Direction::Left => -1,
+            Direction::Right => 1,
         };
 
         self.0 = (self.0 + change) % 100;
@@ -47,10 +48,12 @@ where
             .parse::<i32>()
             .expect("Can't read rotation clicks");
 
-        dial.rotate(direction, clicks);
+        for _ in 0..clicks {
+            dial.rotate(direction);
 
-        if dial.read() == 0 {
-            password += 1;
+            if dial.read() == 0 {
+                password += 1;
+            }
         }
     }
 
