@@ -5,10 +5,6 @@ use std::path::Path;
 fn is_invalid(mut id: usize) -> bool {
     let digit_count = (id as f64).log10() as usize + 1;
 
-    if digit_count % 2 != 0 {
-        return false;
-    }
-
     let mut digits = Vec::with_capacity(digit_count);
 
     while id != 0 {
@@ -16,9 +12,19 @@ fn is_invalid(mut id: usize) -> bool {
         id /= 10;
     }
 
-    let mid = digit_count / 2;
+    'outer: for part_size in (1..digit_count).filter(|p| digit_count % p == 0) {
+        let head = &digits[0..part_size];
 
-    &digits[..mid] == &digits[mid..]
+        for i in (part_size..=digit_count - part_size).step_by(part_size) {
+            if head != &digits[i..i + part_size] {
+                continue 'outer;
+            }
+        }
+
+        return true;
+    }
+
+    false
 }
 
 fn create_range(range_text: &str) -> RangeInclusive<usize> {
