@@ -84,18 +84,23 @@ impl PaperGrid {
             .count()
     }
 
-    fn accessible_positions(&self, inaccessible_limit: usize) -> usize {
-        let mut accessible = 0;
+    fn remove_accessible(&mut self, inaccessible_limit: usize) -> Option<usize> {
+        let mut removed = 0;
 
         for row in 0..self.rows {
             for col in 0..self.cols {
-                if self.is_occupied(row, col) && self.adjacent_to(row, col) < inaccessible_limit {
-                    accessible += 1;
+                if self.adjacent_to(row, col) < inaccessible_limit {
+                    removed += self.is_occupied(row, col) as usize;
+                    self.rolls[col + row * self.cols] = false;
                 }
             }
         }
 
-        accessible
+        if removed == 0 {
+            return None;
+        }
+
+        Some(removed)
     }
 }
 
@@ -118,11 +123,14 @@ impl fmt::Display for PaperGrid {
 }
 
 fn main() {
-    let grid =
+    let mut grid =
         PaperGrid::new(&fs::read_to_string("paper_rolls").expect("Cannot read the paper rolls"));
 
-    println!(
-        "There are {} rolls accessible",
-        grid.accessible_positions(4)
-    );
+    let mut removed = 0;
+
+    while let Some(rolls) = grid.remove_accessible(4) {
+        removed += rolls;
+    }
+
+    println!("{} rolls can be removed using forklifts", removed);
 }
