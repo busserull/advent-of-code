@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::fs;
 use std::ops::RangeInclusive;
 
@@ -30,14 +31,17 @@ impl FreshnessTracker {
         )
     }
 
-    fn is_fresh(&self, id: u64) -> bool {
-        for range in self.0.iter() {
-            if range.contains(&id) {
-                return true;
+    fn all_fresh_ids(&self) -> HashSet<u64> {
+        let mut set = HashSet::new();
+
+        for range in self.0.iter().cloned() {
+            println!("Range {:?}", range);
+            for id in range {
+                set.insert(id);
             }
         }
 
-        false
+        set
     }
 }
 
@@ -60,9 +64,12 @@ fn main() {
     let database =
         fs::read_to_string("ingredient_database").expect("Cannot read the ingredient database");
 
-    let (tracker, list) = get_tracker_and_ingredients_list(&database);
+    let (tracker, _list) = get_tracker_and_ingredients_list(&database);
 
-    let fresh_ingredients = list.into_iter().filter(|id| tracker.is_fresh(*id)).count();
+    let fresh_ids = tracker.all_fresh_ids();
 
-    println!("There are {} fresh ingredients", fresh_ingredients);
+    println!(
+        "In total, there are {} fresh ingredient IDs",
+        fresh_ids.len()
+    );
 }
