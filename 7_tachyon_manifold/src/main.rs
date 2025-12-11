@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum GridEntry {
     Source,
@@ -42,6 +44,51 @@ impl SplitterDiagram {
         }
     }
 
+    fn count_quantum_splits(&self) -> usize {
+        let start_index = self
+            .grid
+            .iter()
+            .position(|entry| matches!(entry, GridEntry::Source))
+            .expect("There is no tachyon beam source");
+
+        let mut memo = HashMap::new();
+
+        self.count_quantum_splits_from(start_index, &mut memo)
+    }
+
+    fn count_quantum_splits_from(
+        &self,
+        mut index: usize,
+        memo: &mut HashMap<usize, usize>,
+    ) -> usize {
+        if let Some(paths) = memo.get(&index) {
+            return *paths;
+        }
+
+        let memo_index = index;
+
+        while index < self.grid.len() && self.grid[index] != GridEntry::Splitter {
+            index += self.columns;
+        }
+
+        if index > self.grid.len() {
+            memo.insert(memo_index, 1);
+            return 1;
+        }
+
+        let left = (index % self.columns > 0)
+            .then(|| self.count_quantum_splits_from(index - 1, memo))
+            .unwrap_or(0);
+
+        let right = (index % self.columns < self.columns - 1)
+            .then(|| self.count_quantum_splits_from(index + 1, memo))
+            .unwrap_or(0);
+
+        memo.insert(memo_index, left + right);
+
+        left + right
+    }
+
     fn count_splits(&self) -> usize {
         let mut beams = vec![false; self.rows * self.columns];
 
@@ -74,40 +121,6 @@ impl SplitterDiagram {
             }
         }
 
-        /*
-
-        for row in 0..self.rows {
-            for col in 0..self.columns {
-                let index = row * self.columns + col;
-                use GridEntry::*;
-                match self.grid[index] {
-                    Source => print!("S"),
-                    Splitter => print!("^"),
-                    Space => print!("."),
-                }
-            }
-            println!();
-        }
-
-        println!();
-
-        for row in 0..self.rows {
-            for col in 0..self.columns {
-                let index = row * self.columns + col;
-                use GridEntry::*;
-                match (self.grid[index], beams[index]) {
-                    (Source, _) => print!("S"),
-                    (Splitter, true) => print!("x"),
-                    (Splitter, false) => print!("^"),
-                    (Space, true) => print!("|"),
-                    (Space, false) => print!("."),
-                }
-            }
-            println!();
-        }
-
-        */
-
         self.grid
             .iter()
             .zip(beams.into_iter())
@@ -117,33 +130,17 @@ impl SplitterDiagram {
 }
 
 fn main() {
-    /*
-        let input = "
-.......S.......
-...............
-.......^.......
-...............
-......^.^......
-...............
-.....^.^.^.....
-...............
-....^.^...^....
-...............
-...^.^...^.^...
-...............
-..^...^.....^..
-...............
-.^.^.^.^.^...^.
-...............
-";
-    */
-
     let diagram = SplitterDiagram::new(
         &std::fs::read_to_string("diagram").expect("Cannot read the tachyon diagram"),
     );
 
     println!(
-        "The tachyon beams make {} splits in this diagram",
+        "There are {} splitters being hit in this diagram",
         diagram.count_splits()
+    );
+
+    println!(
+        "There are {} possible tachyon splits in this diagram",
+        diagram.count_quantum_splits()
     );
 }
